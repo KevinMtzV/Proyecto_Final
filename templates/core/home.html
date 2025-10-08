@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-light rounded-3 text-center">
+    <div class="container-fluid py-5">
+        <h1 class="display-5 fw-bold">Uniendo Donantes con Necesidades Reales</h1>
+        <p class="fs-4">Ayuda a financiar o donar artículos a las campañas más urgentes.</p>
+        <a href="#" class="btn btn-primary btn-lg">Ver todas las Campañas</a>
+        {% if user.is_authenticated %}
+            <a href="#" class="btn btn-warning btn-lg">Crear Campaña</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-success btn-lg">Comenzar a Donar</a>
+        {% endif %}
+    </div>
+</div>
+
+<h2>Campañas Recientes</h2>
+<hr>
+
+<div class="row">
+    {% for campana in campanas %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">{{ campana.titulo }}</h5>
+                <p class="card-text text-muted small">{{ campana.categoria.nombre }}</p>
+                <p class="card-text">{{ campana.descripcion|truncatechars:100 }}</p>
+                
+                {% if campana.meta_monetaria > 0 %}
+                    <div class="progress mb-2" role="progressbar" aria-label="Progreso" aria-valuenow="{{ campana.porcentaje_completado }}" aria-valuemin="0" aria-valuemax="100">
+                      <div class="progress-bar bg-success" style="width: {{ campana.porcentaje_completado }}%">{{ campana.porcentaje_completado }}%</div>
+                    </div>
+                    <p class="text-end fw-bold">Recaudado: ${{ campana.recaudado|floatformat:2 }} de ${{ campana.meta_monetaria|floatformat:2 }}</p>
+                {% else %}
+                    <span class="badge bg-info text-dark">Donación de Artículos</span>
+                {% endif %}
+                
+                <a href="#" class="btn btn-sm btn-primary mt-2">Ver Detalles</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+        <p class="text-center">No hay campañas activas actualmente. ¡Sé el primero en crear una!</p>
+    {% endfor %}
+</div>
+
+{% endblock %}
