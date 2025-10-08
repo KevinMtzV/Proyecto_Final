@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-
+{% load crispy_forms_tags %}
 {% block title %}Inicio{% endblock %}
 
 {% block content %}
@@ -7,7 +7,7 @@
     <div class="container-fluid py-5">
         <h1 class="display-5 fw-bold">Uniendo Donantes con Necesidades Reales</h1>
         <p class="fs-4">Ayuda a financiar o donar artículos a las campañas más urgentes.</p>
-        <a href="#" class="btn btn-primary btn-lg">Ver todas las Campañas</a>
+        <a href="{% url 'campana_listado' %}" class="btn btn-primary btn-lg">Ver todas las Campañas</a>
         {% if user.is_authenticated %}
             <a href="{% url 'campana_crear' %}" class="btn btn-warning btn-lg">Crear Campaña</a>
         {% else %}

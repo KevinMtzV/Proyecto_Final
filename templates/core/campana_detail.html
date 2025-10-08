@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %} 
+{% load humanize %}
+
+{% block title %}{{ campana.titulo }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <h1 class="display-5">{{ campana.titulo }}</h1>
+        <p class="text-muted">Organizado por: {{ campana.organizador.username }} | Categoría: {{ campana.categoria.nombre }}</p>
+        <hr>
+
+        <p class="lead">{{ campana.descripcion|linebreaksbr }}</p>
+        
+        <p>Fecha Límite: **{{ campana.fecha_limite|date:"d M, Y" }}**</p>
+        
+        {% if campana.meta_monetaria > 0 %}
+            <div class="card p-3 mb-4 bg-light">
+                <h4 class="text-center mb-3">Progreso de Recaudación</h4>
+                <div class="progress mb-2" style="height: 30px;" role="progressbar" aria-label="Progreso" aria-valuenow="{{ campana.porcentaje_completado }}" aria-valuemin="0" aria-valuemax="100">
+                  <div class="progress-bar bg-success fs-6" style="width: {{ campana.porcentaje_completado }}%">
+                    **{{ campana.porcentaje_completado }}%**
+                  </div>
+                </div>
+                <p class="h5 text-end fw-bold mt-2">
+                    Recaudado: ${{ campana.recaudado|floatformat:2|intcomma }} de ${{ campana.meta_monetaria|floatformat:2|intcomma }}
+                </p>
+            </div>
+        {% else %}
+             <span class="badge bg-info text-dark p-2 fs-6">Campaña de Donación de Artículos</span>
+        {% endif %}
+
+        <h4 class="mt-5">Últimas Donaciones</h4>
+        <ul class="list-group list-group-flush">
+            {% for donacion in donaciones %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        **{{ donacion.donante.username|default:"Anónimo" }}** donó un {{ donacion.get_tipo_display|lower }}:
+                        
+                        {% if donacion.tipo == 'MON' %}
+                            <span class="fw-bold text-success">${{ donacion.monto|floatformat:2|intcomma }}</span>
+                        {% else %}
+                            <span class="fw-bold text-primary">{{ donacion.articulo_donado }}</span>
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">{{ donacion.fecha_donacion|timesince }}</small>
+                </li>
+            {% empty %}
+                <li class="list-group-item text-center text-muted">Aún no hay donaciones. ¡Sé el primero!</li>
+            {% endfor %}
+        </ul>
+        
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow sticky-top" style="top: 20px;">
+            <div class="card-header bg-success text-white text-center">
+                <h3>Realizar Donación</h3>
+            </div>
+            <div class="card-body">
+                {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'donar_submit' campana.pk %}">
+                        {% csrf_token %}
+                        {{ form_donacion|crispy }}
+                        <div class="alert alert-warning small mt-3">
+                            Seleccione **Monetaria** e ingrese un monto **O** seleccione **Artículo** y describa lo que donará. No ambos.
+                        </div>
+                        <button type="submit" class="btn btn-success btn-lg w-100 mt-3">Donar Ahora</button>
+                    </form>
+                {% else %}
+                    <div class="alert alert-danger text-center">
+                        Debes <a href="{% url 'login' %}?next={{ request.path }}">iniciar sesión</a> para realizar una donación.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,10 +1,17 @@
 # core/views.py
 
-from django.shortcuts import render
-from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin # Para vistas basadas en clases
-from .forms import CustomUserCreationForm, CampanaForm # Importamos el nuevo formulario
-from .models import Campana 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login
+from django.contrib import messages
+from django.views.generic import TemplateView, DetailView, ListView 
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic.edit import CreateView
+from django.urls import reverse_lazy
+from django.db.models import Q 
+from .forms import CustomUserCreationForm, CampanaForm 
+from .models import Campana, Categoria, Donacion 
+from .forms import CustomUserCreationForm, CampanaForm, DonacionForm
 
 def home_view(request):
     # Obtener un listado de campañas activas (Requisito 12 - Búsqueda/Filtrado Básico)
@@ -42,3 +49,77 @@ class CampanaCreateView(LoginRequiredMixin, CreateView):
         form.instance.organizador = self.request.user 
         return super().form_valid(form)
 
+
+# Vista para el Listado de Campañas con Búsqueda/Filtro (Requisito 12)
+class CampanaListView(ListView):
+    model = Campana
+    template_name = 'core/campana_list.html'
+    context_object_name = 'campanas'
+    paginate_by = 9
+
+    def get_queryset(self):
+        # Filtra solo las campañas activas
+        queryset = super().get_queryset().filter(estado='ACT').order_by('-fecha_creacion')
+        
+        # Búsqueda por palabra clave (query)
+        query = self.request.GET.get('q')
+        if query:
+            queryset = queryset.filter(
+                Q(titulo__icontains=query) | Q(descripcion__icontains=query)
+            ).distinct()
+
+        # Filtrado por Categoría
+        categoria_id = self.request.GET.get('cat')
+        if categoria_id:
+            queryset = queryset.filter(categoria_id=categoria_id)
+
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Pasa todas las categorías para el menú de filtro
+        context['categorias'] = Categoria.objects.all() 
+        context['current_cat'] = self.request.GET.get('cat')
+        context['current_query'] = self.request.GET.get('q')
+        return context
+
+
+# Vista para el Detalle de Campaña (Requisito 2)
+class CampanaDetailView(DetailView):
+    model = Campana
+    template_name = 'core/campana_detail.html'
+    context_object_name = 'campana'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Añade el formulario de donación y donaciones recientes
+        context['form_donacion'] = DonacionForm() 
+        context['donaciones'] = self.object.donaciones.all().order_by('-fecha_donacion')[:5]
+        return context
+
+
+# Función para procesar la donación (POST)
+@login_required
+def donar_submit_view(request, pk):
+    campana = get_object_or_404(Campana, pk=pk)
+    
+    if request.method == 'POST':
+        form = DonacionForm(request.POST)
+        if form.is_valid():
+            donacion = form.save(commit=False)
+            donacion.campana = campana
+            donacion.donante = request.user
+            donacion.save()
+
+            # Lógica de actualización de recaudación
+            if donacion.tipo == 'MON' and donacion.monto:
+                # Usamos una operación segura de suma
+                campana.recaudado = (campana.recaudado or 0) + donacion.monto
+                campana.save()
+            
+            messages.success(request, f'¡Gracias {request.user.username}! Tu donación de {donacion.get_tipo_display()} ha sido registrada con éxito.')
+        else:
+            # Si hay un error, lo mostramos y redirigimos de vuelta al detalle
+            messages.error(request, f'Error en la donación: Revise si ingresó monto O artículo. {form.errors}')
+            
+    return redirect('campana_detalle', pk=campana.pk)
