@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %} 
+
+{% block title %}Registrarse{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark text-center">
+                <h2>Crea tu Cuenta</h2>
+                <small>Únete para donar o solicitar ayuda.</small>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <button type="submit" class="btn btn-warning btn-block w-100 mt-3">Registrarme</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
