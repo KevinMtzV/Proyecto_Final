@@ -51,6 +51,6 @@ class CampanaSerializer(serializers.ModelSerializer):
         
     def get_ultimas_donaciones(self, obj):
         """Método para obtener y serializar las donaciones de una campaña."""
-        donaciones = obj.donacion_set.all().order_by('-fecha_donacion')[:5]
+        donaciones = obj.donaciones.all().order_by('-fecha_donacion')[:5]
         # Usamos DonacionSerializer para serializar estas donaciones
         return DonacionSerializer(donaciones, many=True).data

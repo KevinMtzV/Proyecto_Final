@@ -13,7 +13,7 @@
 
         <p class="lead">{{ campana.descripcion|linebreaksbr }}</p>
         
-        <p>Fecha Límite: **{{ campana.fecha_limite|date:"d M, Y" }}**</p>
+        <p>Fecha Límite: {{ campana.fecha_limite|date:"d M, Y" }}</p>
         
         {% if campana.meta_monetaria > 0 %}
             <div class="card p-3 mb-4 bg-light">
@@ -36,7 +36,7 @@
             {% for donacion in donaciones %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
-                        **{{ donacion.donante.username|default:"Anónimo" }}** donó un {{ donacion.get_tipo_display|lower }}:
+                        {{ donacion.donante.username|default:"Anónimo" }} donó un {{ donacion.get_tipo_display|lower }}:
                         
                         {% if donacion.tipo == 'MON' %}
                             <span class="fw-bold text-success">${{ donacion.monto|floatformat:2|intcomma }}</span>
@@ -58,14 +58,15 @@
             <div class="card-header bg-success text-white text-center">
                 <h3>Realizar Donación</h3>
             </div>
+            <div class="alert alert-warning small mt-3">
+                Seleccione "Monetaria" e ingrese un monto O seleccione "Artículo" y describa lo que donará. <br> No ambos.
+            </div>
             <div class="card-body">
                 {% if user.is_authenticated %}
                     <form method="post" action="{% url 'donar_submit' campana.pk %}">
                         {% csrf_token %}
                         {{ form_donacion|crispy }}
-                        <div class="alert alert-warning small mt-3">
-                            Seleccione **Monetaria** e ingrese un monto **O** seleccione **Artículo** y describa lo que donará. No ambos.
-                        </div>
+                        
                         <button type="submit" class="btn btn-success btn-lg w-100 mt-3">Donar Ahora</button>
                     </form>
                 {% else %}
