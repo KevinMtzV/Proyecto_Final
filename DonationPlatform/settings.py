@@ -40,6 +40,10 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'core',
+    'django.contrib.humanize',
+    'widget_tweaks',
+    # INSTALACIÓN DE LA WEB API
+    'rest_framework',
 ]
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"

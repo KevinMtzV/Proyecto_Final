@@ -11,6 +11,8 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),
     # 2. Rutas de la aplicación 'core'
     path('', include('core.urls')),
+    # RUTA PARA LA WEB API (API REST)
+    path('api/v1/', include('core.api.urls')),
 ]
 
 if settings.DEBUG:
