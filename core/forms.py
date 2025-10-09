@@ -19,7 +19,7 @@ class CampanaForm(forms.ModelForm):
     """Formulario para la creación o edición de campañas."""
     class Meta:
         model = Campana
-        fields = ['titulo', 'descripcion', 'fecha_limite', 'meta_monetaria', 'categoria']
+        fields = ['titulo', 'descripcion', 'fecha_limite', 'meta_monetaria', 'categoria', 'imagen']
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

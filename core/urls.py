@@ -2,7 +2,7 @@
 
 from django.urls import path
 from . import views
-from .views import CampanaCreateView, CampanaListView, CampanaDetailView, donar_submit_view
+from .views import CampanaCreateView, CampanaListView, CampanaDetailView, donar_submit_view, UserDashboardView
 
 urlpatterns = [
     path('', views.home_view, name='home'),
@@ -15,4 +15,7 @@ urlpatterns = [
 
      # 2. Ruta de Donación (POST)
     path('campana/<int:pk>/donar/', donar_submit_view, name='donar_submit'),
+
+    # Ruta del Dashboard
+    path('dashboard/', UserDashboardView.as_view(), name='dashboard'),
 ]

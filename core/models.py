@@ -35,6 +35,9 @@ class Campana(models.Model):
     categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True)
     organizador = models.ForeignKey(User, on_delete=models.CASCADE)
     estado = models.CharField(max_length=3, choices=ORGANIZADOR, default='ACT')
+    imagen = models.ImageField(upload_to='campana_pics/', 
+                               null=True, blank=True, 
+                               help_text="Imagen principal de la campaña.")
 
     def __str__(self):
         return self.titulo

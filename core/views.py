@@ -123,3 +123,18 @@ def donar_submit_view(request, pk):
             messages.error(request, f'Error en la donación: Revise si ingresó monto O artículo. {form.errors}')
             
     return redirect('campana_detalle', pk=campana.pk)
+
+class UserDashboardView(LoginRequiredMixin, TemplateView):
+    template_name = 'core/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Campañas que el usuario ha organizado
+        context['mis_campanas'] = user.campana_set.all().order_by('-fecha_creacion')
+        
+        # Donaciones que el usuario ha realizado
+        context['mis_donaciones'] = user.donaciones_realizadas.all().order_by('-fecha_donacion')
+        
+        return context

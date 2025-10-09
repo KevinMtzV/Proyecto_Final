@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Mi Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Hola, {{ user.username }}</h1>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4>Mis Campañas Organizadas ({{ mis_campanas.count }})</h4>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for campana in mis_campanas|slice:":5" %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="{% url 'campana_detalle' campana.pk %}">{{ campana.titulo }}</a>
+                    <span class="badge bg-{{ campana.estado|lower|cut:'c'|cut:'d'|cut:'s'|cut:'n'|cut:'a'|cut:'l'|cut:'e'|cut:'d'|cut:'d'|cut:'o'|cut:'v'|cut:'i'|cut:'n'|cut:'o'|cut:'l'|cut:'i'|cut:'p'|cut:'m'|cut:'e'|cut:'t'|cut:'e'|cut:'r'|cut:'i'|cut:'n'|cut:'a'|cut:'d'|cut:'o'|cut:' ' }}" 
+                          class="badge bg-{{ campana.estado|lower|yesno:'success,warning'|default:'secondary' }}">
+                        {{ campana.get_estado_display }}
+                    </span>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">Aún no has creado ninguna campaña.</li>
+                {% endfor %}
+            </ul>
+            <div class="card-footer text-center">
+                <a href="{% url 'campana_crear' %}" class="btn btn-sm btn-success">Crear Nueva Campaña</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h4>Mis Donaciones ({{ mis_donaciones.count }})</h4>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for donacion in mis_donaciones|slice:":5" %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        Donaste **{{ donacion.get_tipo_display|lower }}** a <span class="fw-bold">{{ donacion.campana.titulo|truncatechars:20 }}</span>
+                    </div>
+                    <small class="text-muted">{{ donacion.fecha_donacion|date:"d M, Y" }}</small>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">Aún no has realizado ninguna donación.</li>
+                {% endfor %}
+            </ul>
+            <div class="card-footer text-center">
+                <a href="{% url 'campana_listado' %}" class="btn btn-sm btn-primary">Buscar Campañas</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
