@@ -59,7 +59,7 @@ class Donacion(models.Model):
     
     campana = models.ForeignKey(Campana, on_delete=models.CASCADE, related_name='donaciones')
     # Permite donaciones anónimas si donante=None
-    donante = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    donante = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='donaciones_realizadas')
     monto = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     articulo_donado = models.CharField(max_length=255, null=True, blank=True)
     tipo = models.CharField(max_length=3, choices=TIPO_DONACION)
