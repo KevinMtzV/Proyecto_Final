@@ -19,12 +19,12 @@
             <div class="card p-3 mb-4 bg-light">
                 <h4 class="text-center mb-3">Progreso de Recaudación</h4>
                 <div class="progress mb-2" style="height: 30px;" role="progressbar" aria-label="Progreso" aria-valuenow="{{ campana.porcentaje_completado }}" aria-valuemin="0" aria-valuemax="100">
-                  <div class="progress-bar bg-success fs-6" style="width: {{ campana.porcentaje_completado }}%">
-                    **{{ campana.porcentaje_completado }}%**
+                  <div id="progress-bar-campana" class="progress-bar bg-success fs-6" style="width: {{ campana.porcentaje_completado }}%">
+                    {{ campana.porcentaje_completado }}%
                   </div>
                 </div>
                 <p class="h5 text-end fw-bold mt-2">
-                    Recaudado: ${{ campana.recaudado|floatformat:2|intcomma }} de ${{ campana.meta_monetaria|floatformat:2|intcomma }}
+                    Recaudado: $<span id="recaudado-monto">{{ campana.recaudado|floatformat:2|intcomma }}</span> de ${{ campana.meta_monetaria|floatformat:2|intcomma }}
                 </p>
             </div>
         {% else %}
@@ -63,7 +63,7 @@
             </div>
             <div class="card-body">
                 {% if user.is_authenticated %}
-                    <form method="post" action="{% url 'donar_submit' campana.pk %}">
+                    <form method="post" action="{% url 'donar_submit' campana.pk %}"id="form-donacion-ajax">
                         {% csrf_token %}
                         {{ form_donacion|crispy }}
                         
@@ -78,5 +78,89 @@
         </div>
     </div>
 </div>
+{% block extra_scripts %}
+<script>
+    // Identificar el formulario de donación
+    const formDonacion = document.getElementById('form-donacion-ajax'); 
+    
+    // Función para obtener el valor del token CSRF (Requisito de seguridad para POST)
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
 
+    if (formDonacion) {
+        formDonacion.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Muestra un mensaje de carga
+            const submitButton = formDonacion.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Procesando donación...';
+
+            const formData = new FormData(formDonacion);
+            
+            // Envío asíncrono usando fetch con async/await
+            try {
+                const response = await fetch(formDonacion.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken, // Incluir token de seguridad
+                        'X-Requested-With': 'XMLHttpRequest', // Indicador de AJAX
+                    },
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // ÉXITO: Actualizar la UI sin recargar
+                    alert(data.message); // Usar un modal en producción, por ahora alert
+                    
+                    // Actualizar barra de progreso y recaudado
+                    document.getElementById('recaudado-monto').textContent = '$' + data.new_recaudado.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    
+                    const progressBar = document.getElementById('progress-bar-campana');
+                    if(progressBar) {
+                        progressBar.style.width = data.new_porcentaje + '%';
+                        progressBar.textContent = data.new_porcentaje + '%';
+                    }
+                    
+                    // Limpiar formulario y recargar donaciones recientes si es necesario
+                    formDonacion.reset();
+                    // Opcional: Volver a cargar las últimas donaciones con otra petición AJAX (Encadenamiento)
+                    
+                } else if (!data.success && data.errors) {
+                    // FALLO DE VALIDACIÓN: Mostrar errores
+                    alert('Error en el formulario. Revise los datos.'); // Reemplazar con lógica de UI
+                    console.error('Errores:', data.errors);
+
+                } else {
+                    // OTROS ERRORES
+                    alert('Ocurrió un error inesperado al donar.');
+                }
+            } catch (error) {
+                console.error('Error de red o servidor:', error);
+                alert('Fallo la conexión con el servidor. Intente más tarde.');
+            } finally {
+                // Restaura el botón
+                submitButton.disabled = false;
+                submitButton.textContent = 'Donar Ahora';
+            }
+        });
+    }
+</script>
+
+{% endblock %}
 {% endblock %}

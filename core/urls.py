@@ -2,7 +2,7 @@
 
 from django.urls import path
 from . import views
-from .views import CampanaCreateView, CampanaListView, CampanaDetailView, donar_submit_view, UserDashboardView
+from .views import CampanaCreateView, CampanaListView, CampanaDetailView, donar_submit_view, UserDashboardView, CampanaUpdateView
 
 urlpatterns = [
     path('', views.home_view, name='home'),
@@ -10,6 +10,7 @@ urlpatterns = [
     path('register/', views.register_view, name='register'), 
      # 1. Rutas de Campañas
     path('campana/crear/', CampanaCreateView.as_view(), name='campana_crear'), 
+    path('campana/<int:pk>/editar/', CampanaUpdateView.as_view(), name='campana_editar'),
     path('campana/listado/', CampanaListView.as_view(), name='campana_listado'),
     path('campana/<int:pk>/', CampanaDetailView.as_view(), name='campana_detalle'),
 

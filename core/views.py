@@ -6,12 +6,15 @@ from django.contrib import messages
 from django.views.generic import TemplateView, DetailView, ListView 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic.edit import CreateView
+from django.views.generic.edit import CreateView, UpdateView
+from django.core.exceptions import PermissionDenied
 from django.urls import reverse_lazy
 from django.db.models import Q 
 from .forms import CustomUserCreationForm, CampanaForm 
 from .models import Campana, Categoria, Donacion 
 from .forms import CustomUserCreationForm, CampanaForm, DonacionForm
+from django.http import JsonResponse 
+from django.views.decorators.http import require_POST
 
 def home_view(request):
     # Obtener un listado de campañas activas (Requisito 12 - Búsqueda/Filtrado Básico)
@@ -98,30 +101,69 @@ class CampanaDetailView(DetailView):
         return context
 
 
-# Función para procesar la donación (POST)
+# # Función para procesar la donación (POST)
+# @login_required
+# def donar_submit_view(request, pk):
+#     campana = get_object_or_404(Campana, pk=pk)
+    
+#     if request.method == 'POST':
+#         form = DonacionForm(request.POST)
+#         if form.is_valid():
+#             donacion = form.save(commit=False)
+#             donacion.campana = campana
+#             donacion.donante = request.user
+#             donacion.save()
+
+#             # Lógica de actualización de recaudación
+#             if donacion.tipo == 'MON' and donacion.monto:
+#                 # Usamos una operación segura de suma
+#                 campana.recaudado = (campana.recaudado or 0) + donacion.monto
+#                 campana.save()
+            
+#             messages.success(request, f'¡Gracias {request.user.username}! Tu donación de {donacion.get_tipo_display()} ha sido registrada con éxito.')
+#         else:
+#             # Si hay un error, lo mostramos y redirigimos de vuelta al detalle
+#             messages.error(request, f'Error en la donación: Revise si ingresó monto O artículo. {form.errors}')
+            
+#     return redirect('campana_detalle', pk=campana.pk)
+
 @login_required
+@require_POST # Asegura que solo acepte peticiones POST
 def donar_submit_view(request, pk):
     campana = get_object_or_404(Campana, pk=pk)
     
-    if request.method == 'POST':
+    # Asume que esta vista será llamada por AJAX, devolviendo JSON.
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         form = DonacionForm(request.POST)
+        
         if form.is_valid():
-            donacion = form.save(commit=False)
-            donacion.campana = campana
-            donacion.donante = request.user
-            donacion.save()
+            try:
+                donacion = form.save(commit=False)
+                donacion.campana = campana
+                donacion.donante = request.user
+                donacion.save()
 
-            # Lógica de actualización de recaudación
-            if donacion.tipo == 'MON' and donacion.monto:
-                # Usamos una operación segura de suma
-                campana.recaudado = (campana.recaudado or 0) + donacion.monto
-                campana.save()
-            
-            messages.success(request, f'¡Gracias {request.user.username}! Tu donación de {donacion.get_tipo_display()} ha sido registrada con éxito.')
+                # Lógica de actualización de recaudación
+                if donacion.tipo == 'MON' and donacion.monto:
+                    campana.recaudado = (campana.recaudado or 0) + donacion.monto
+                    campana.save(update_fields=['recaudado', 'recaudado'])
+                
+                # Devuelve JSON de éxito
+                return JsonResponse({
+                    'success': True,
+                    'message': f'¡Gracias {request.user.username}! Tu donación ha sido registrada.',
+                    'new_recaudado': float(campana.recaudado),
+                    'new_porcentaje': campana.porcentaje_completado,
+                })
+            except Exception as e:
+                 return JsonResponse({'success': False, 'message': 'Error al procesar la donación.'}, status=500)
         else:
-            # Si hay un error, lo mostramos y redirigimos de vuelta al detalle
-            messages.error(request, f'Error en la donación: Revise si ingresó monto O artículo. {form.errors}')
+            # Devuelve JSON con errores del formulario
+            errors = dict(form.errors)
+            return JsonResponse({'success': False, 'errors': errors, 'message': 'Datos del formulario inválidos.'}, status=400)
             
+    # Si no es AJAX, redirige como fallback
+    messages.error(request, 'Error en el método de envío. Intente de nuevo.')
     return redirect('campana_detalle', pk=campana.pk)
 
 class UserDashboardView(LoginRequiredMixin, TemplateView):
@@ -137,4 +179,33 @@ class UserDashboardView(LoginRequiredMixin, TemplateView):
         # Donaciones que el usuario ha realizado
         context['mis_donaciones'] = user.donaciones_realizadas.all().order_by('-fecha_donacion')
         
+        return context
+    
+# Nueva Vista para Editar Campaña
+class CampanaUpdateView(LoginRequiredMixin, UpdateView):
+    model = Campana
+    form_class = CampanaForm
+    template_name = 'core/campana_form.html' # Reutilizamos la misma plantilla
+    success_url = reverse_lazy('dashboard') 
+
+    # Implementación de Autorización (Req 4)
+    def dispatch(self, request, *args, **kwargs):
+        # Primero llama al dispatch de LoginRequiredMixin para asegurar que el usuario esté logueado
+        response = super().dispatch(request, *args, **kwargs)
+        
+        # Obtener la campaña a editar
+        campana = self.get_object()
+        
+        # Comprueba si el usuario logueado NO es el organizador
+        if campana.organizador != self.request.user:
+            # Lanza una excepción o redirige a un mensaje de error
+            messages.error(request, "No tienes permiso para editar esta campaña.")
+            raise PermissionDenied
+            
+        return response
+
+    # Opcional: Cambia el título de la plantilla para que sepa que está editando
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['action_title'] = "Editar Campaña"
         return context

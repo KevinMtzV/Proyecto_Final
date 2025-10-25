@@ -15,7 +15,10 @@
             <ul class="list-group list-group-flush">
                 {% for campana in mis_campanas|slice:":5" %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <a href="{% url 'campana_detalle' campana.pk %}">{{ campana.titulo }}</a>
+                    <div>
+                        <a href="{% url 'campana_detalle' campana.pk %}">{{ campana.titulo }}</a>
+                        <a href="{% url 'campana_editar' campana.pk %}" class="badge bg-secondary ms-2 text-decoration-none">Editar</a> <!-- <--- NUEVO BOTÓN -->
+                    </div>
                     <span class="badge bg-{{ campana.estado|lower|cut:'c'|cut:'d'|cut:'s'|cut:'n'|cut:'a'|cut:'l'|cut:'e'|cut:'d'|cut:'d'|cut:'o'|cut:'v'|cut:'i'|cut:'n'|cut:'o'|cut:'l'|cut:'i'|cut:'p'|cut:'m'|cut:'e'|cut:'t'|cut:'e'|cut:'r'|cut:'i'|cut:'n'|cut:'a'|cut:'d'|cut:'o'|cut:' ' }}" 
                           class="badge bg-{{ campana.estado|lower|yesno:'success,warning'|default:'secondary' }}">
                         {{ campana.get_estado_display }}
