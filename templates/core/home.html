@@ -46,4 +46,182 @@
     {% endfor %}
 </div>
 
+
+<!-- Sección: ¿Cómo funciona? -->
+<section class="container my-5">
+    <div class="row text-center mb-4">
+        <div class="col">
+            <h2 class="h3">¿Cómo funciona?</h2>
+            <p class="text-muted">En tres pasos puedes ayudar o recibir ayuda.</p>
+        </div>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">1. Explora campañas</h5>
+                    <p class="card-text">Busca por causa, lee la descripción y conoce la meta de recaudación o los artículos necesarios.</p>
+                    <a href="{% url 'campana_listado' %}" class="btn btn-outline-primary btn-sm">Explorar campañas</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">2. Dona fácilmente</h5>
+                    <p class="card-text">Elige donar dinero o artículos. Tu aporte se registra al instante y se suma al progreso.</p>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'campana_listado' %}" class="btn btn-outline-success btn-sm">Quiero donar</a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-success btn-sm">Iniciar sesión para donar</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">3. Crea tu campaña</h5>
+                    <p class="card-text">¿Necesitas apoyo? Crea una campaña, define una meta y comparte tu causa para recibir donaciones.</p>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'campana_crear' %}" class="btn btn-outline-warning btn-sm">Crear campaña</a>
+                    {% else %}
+                        <a href="{% url 'register' %}" class="btn btn-outline-warning btn-sm">Regístrate para crear</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Sección: Beneficios / Principios -->
+<section class="container my-5">
+    <div class="row text-center mb-4">
+        <div class="col">
+            <h2 class="h3">¿Por qué usar esta plataforma?</h2>
+        </div>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0">
+                <div class="card-body">
+                    <h6 class="fw-bold">Transparencia</h6>
+                    <p class="text-muted mb-0">Cada donación se refleja en el progreso de la campaña para que veas el impacto real.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0">
+                <div class="card-body">
+                    <h6 class="fw-bold">Flexibilidad</h6>
+                    <p class="text-muted mb-0">Apoya con dinero o artículos; tú decides cómo ayudar según tus posibilidades.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0">
+                <div class="card-body">
+                    <h6 class="fw-bold">Comunidad</h6>
+                    <p class="text-muted mb-0">Conecta con causas locales y personas que necesitan de tu ayuda hoy.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+<!-- Sección: Historias y Opiniones (Hardcode) -->
+<section class="container my-5">
+    <div class="row text-center mb-4">
+        <div class="col">
+            <h2 class="h3">Historias y opiniones</h2>
+            <p class="text-muted">Testimonios reales de organizadores y donantes que ya forman parte de la comunidad.</p>
+        </div>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="rounded-circle bg-light me-3" style="width:56px;height:56px;"></div>
+                        <div>
+                            <div class="fw-bold">María González</div>
+                            <small class="text-muted">Donante</small>
+                        </div>
+                    </div>
+                    <blockquote class="mb-0">
+                        “Me encantó la transparencia. En minutos vi cómo mi donación ayudó a acercar una meta importante.”
+                    </blockquote>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="rounded-circle bg-light me-3" style="width:56px;height:56px;"></div>
+                        <div>
+                            <div class="fw-bold">Refugio Patitas</div>
+                            <small class="text-muted">Organización</small>
+                        </div>
+                    </div>
+                    <blockquote class="mb-0">
+                        “Logramos reunir alimento y medicinas en tiempo récord. La comunidad respondió de inmediato.”
+                    </blockquote>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="rounded-circle bg-light me-3" style="width:56px;height:56px;"></div>
+                        <div>
+                            <div class="fw-bold">Alejandro Ruiz</div>
+                            <small class="text-muted">Organizador</small>
+                        </div>
+                    </div>
+                    <blockquote class="mb-0">
+                        “Crear la campaña fue súper sencillo. Compartí el enlace y en pocos días alcanzamos la meta.”
+                    </blockquote>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Sección: Acerca de -->
+<section id="acerca-de" class="container my-5">
+    <h2 class="h3 mb-3" style="text-align: center;">Acerca de la plataforma</h2>
+    <div class="row align-items-center g-4">
+        <div class="col-lg-6">
+            
+            <p class="text-muted">Somos una plataforma que conecta personas y organizaciones con necesidades reales, con donantes dispuestos a ayudar. Nuestro objetivo es facilitar donaciones transparentes y efectivas, ya sea en <strong>aportes monetarios</strong> o <strong>donación de artículos</strong>.</p>
+            <p class="text-muted">Cada campaña muestra su progreso en tiempo real, para que puedas ver el impacto de tu ayuda. También promovemos la <strong>participación comunitaria</strong> al permitir que cualquier usuario cree campañas de forma sencilla.</p>
+            <!-- <div class="mt-3">
+                <a href="{% url 'campana_listado' %}" class="btn btn-outline-primary me-2">Explorar campañas</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'campana_crear' %}" class="btn btn-primary">Crear mi campaña</a>
+                {% else %}
+                    <a href="{% url 'register' %}" class="btn btn-primary">Crear mi campaña</a>
+                {% endif %}
+            </div> -->
+        </div>
+        <div class="col-lg-6">
+            <div class="p-4 bg-light rounded-3 h-100">
+                <ul class="mb-0">
+                    <li class="mb-2"><strong>Transparencia:</strong> el recaudado se actualiza automáticamente con cada donación.</li>
+                    <li class="mb-2"><strong>Seguridad:</strong> gestión de cuentas y contraseñas con las mejores prácticas.</li>
+                    <li class="mb-2"><strong>Flexibilidad:</strong> campañas con meta monetaria o solicitudes de artículos.</li>
+                    <li class="mb-0"><strong>Comunidad:</strong> conecta con causas locales y comparte tu campaña con facilidad.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <hr class="my-5">
+</section>
+
+
+
 {% endblock %}

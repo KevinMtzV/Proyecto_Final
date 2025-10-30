@@ -1,16 +1,91 @@
 {% extends 'base.html' %}
+{% load humanize %}
 
 
 {% block title %}Mi Dashboard{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Hola, {{ user.username }}</h1>
+<h1 class="mb-4">Mi Perfil</h1>
+
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-dark">
+                <h4 class="mb-0">Datos del Usuario</h4>
+            </div>
+            <div class="card-body row g-3 align-items-center">
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>Usuario:</strong> {{ user.username }}</p>
+                    <p class="mb-1"><strong>Email:</strong> {{ user.email|default:'—' }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>Fecha de registro:</strong> {{ user.date_joined|date:"d M, Y H:i" }}</p>
+                    <p class="mb-1"><strong>Último inicio de sesión:</strong> {{ user.last_login|date:"d M, Y H:i"|default:'—' }}</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a class="btn btn-outline-primary me-2" href="{% url 'cambiar_contrasena' %}">Cambiar contraseña</a>
+                    
+                </div>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="fw-bold">Campañas organizadas</div>
+                        <div class="display-6">{{ total_campanas }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="fw-bold">Total donado</div>
+                        <div class="display-6">${{ total_donado|floatformat:2|intcomma }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="fw-bold">Última donación</div>
+                        <div>
+                            {% if ultima_donacion %}
+                                <span class="badge bg-success">{{ ultima_donacion.get_tipo_display }}</span>
+                                <small class="text-muted ms-2">{{ ultima_donacion.fecha_donacion|date:"d M, Y" }}</small>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
 
 <div class="row">
+<div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4>Mis Donaciones ({{ mis_donaciones.count }})</h4>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for donacion in mis_donaciones|slice:":5" %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        Donaste ${{ donacion.monto|floatformat:2}} a la campaña <span class="fw-bold">"{{ donacion.campana.titulo|truncatechars:20 }}"</span>
+                    </div>
+                    <small class="text-muted">{{ donacion.fecha_donacion|date:"d M, Y" }}</small>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">Aún no has realizado ninguna donación.</li>
+                {% endfor %}
+            </ul>
+            <div class="card-footer text-center">
+                <!-- <a href="{% url 'campana_listado' %}" class="btn btn-sm btn-primary me-2">Buscar Campañas</a> -->
+                <button id="btn-cargar-donaciones" class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#panel-todas-donaciones" aria-expanded="false" aria-controls="panel-todas-donaciones">
+                    Ver todas mis donaciones
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="col-lg-6">
         <div class="card shadow mb-4">
             <div class="card-header bg-primary text-white">
-                <h4>Mis Campañas Organizadas ({{ mis_campanas.count }})</h4>
+                <h4>Mis Campañas Organizadas</h4>
             </div>
             <ul class="list-group list-group-flush">
                 {% for campana in mis_campanas|slice:":5" %}
@@ -34,27 +109,84 @@
         </div>
     </div>
     
-    <div class="col-lg-6">
-        <div class="card shadow mb-4">
-            <div class="card-header bg-warning text-dark">
-                <h4>Mis Donaciones ({{ mis_donaciones.count }})</h4>
-            </div>
-            <ul class="list-group list-group-flush">
-                {% for donacion in mis_donaciones|slice:":5" %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        Donaste ${{ donacion.monto|floatformat:2}} a la campaña <span class="fw-bold">{{ donacion.campana.titulo|truncatechars:20 }}</span>
+    
+</div>
+
+<!-- Panel colapsable: Todas las donaciones del usuario (se carga por AJAX) -->
+<div class="row">
+    <div class="col-lg-12">
+        <div id="panel-todas-donaciones" class="collapse">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Todas mis donaciones</h5>
+                </div>
+                <div class="card-body">
+                    <div id="donaciones-spinner" class="text-center my-3" style="display:none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
                     </div>
-                    <small class="text-muted">{{ donacion.fecha_donacion|date:"d M, Y" }}</small>
-                </li>
-                {% empty %}
-                <li class="list-group-item text-muted">Aún no has realizado ninguna donación.</li>
-                {% endfor %}
-            </ul>
-            <div class="card-footer text-center">
-                <a href="{% url 'campana_listado' %}" class="btn btn-sm btn-primary">Buscar Campañas</a>
+                    <div id="donaciones-error" class="alert alert-danger d-none" role="alert"></div>
+                    <ul id="lista-todas-donaciones" class="list-group list-group-flush"></ul>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    (function() {
+        const collapseEl = document.getElementById('panel-todas-donaciones');
+        const btn = document.getElementById('btn-cargar-donaciones');
+        const listEl = document.getElementById('lista-todas-donaciones');
+        const spinnerEl = document.getElementById('donaciones-spinner');
+        const errorEl = document.getElementById('donaciones-error');
+        let loaded = false;
+
+        async function fetchMisDonaciones() {
+            spinnerEl.style.display = 'block';
+            errorEl.classList.add('d-none');
+            listEl.innerHTML = '';
+            try {
+                const resp = await fetch('/api/v1/donaciones/mis-donaciones/');
+                if (!resp.ok) {
+                    throw new Error('Error HTTP ' + resp.status);
+                }
+                const data = await resp.json();
+                if (!Array.isArray(data) || data.length === 0) {
+                    listEl.innerHTML = '<li class="list-group-item text-muted">No tienes donaciones registradas todavía.</li>';
+                    return;
+                }
+                const rows = data.map(d => {
+                    const esMon = d.tipo === 'MON';
+                    const valor = esMon ? (d.monto ? ('$' + Number(d.monto).toFixed(2)) : '$0.00') : (d.articulo_donado || 'Artículo');
+                    const valorClass = esMon ? 'text-success' : 'text-primary';
+                    const fecha = d.fecha_donacion ? new Date(d.fecha_donacion).toLocaleDateString('es-ES') : '';
+                    const campana = d.campana_titulo || '—';
+                    return `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                Donaste <span class="fw-bold ${valorClass}">${valor}</span> a <span class="fw-bold">"${campana}"</span>
+                            </div>
+                            <small class="text-muted">${fecha}</small>
+                        </li>`;
+                });
+                listEl.innerHTML = rows.join('');
+            } catch (err) {
+                errorEl.textContent = 'No se pudieron cargar tus donaciones. Intenta nuevamente.';
+                errorEl.classList.remove('d-none');
+            } finally {
+                spinnerEl.style.display = 'none';
+            }
+        }
+
+        // Cargar al expandir por primera vez
+        collapseEl.addEventListener('show.bs.collapse', async () => {
+            if (!loaded) {
+                await fetchMisDonaciones();
+                loaded = true;
+            }
+        });
+    })();
+</script>
 {% endblock %}

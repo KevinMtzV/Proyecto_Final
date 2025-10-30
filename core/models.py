@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db.models import Sum
 
-# --- Catálogos (Para cumplir con el Requisito 4) ---
+# --- Catálogos
 
 class Categoria(models.Model):
     """Categoría de la donación/necesidad (e.g., Alimentos, Salud, Educación)."""
@@ -16,7 +16,7 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nombre
 
-# --- Entidades Principales (Requisito 1) ---
+# --- Entidades Principales
 
 class Campana(models.Model):
     ORGANIZADOR = [
@@ -49,7 +49,7 @@ class Campana(models.Model):
             return min(100, int((self.recaudado / self.meta_monetaria) * 100))
         return 0
 
-# --- Nuevo Modelo para Donaciones (Requisito 2) ---
+# --- Modelo para Donaciones
 
 class Donacion(models.Model):
     TIPO_DONACION = [
@@ -58,7 +58,6 @@ class Donacion(models.Model):
     ]
     
     campana = models.ForeignKey(Campana, on_delete=models.CASCADE, related_name='donaciones')
-    # Permite donaciones anónimas si donante=None
     donante = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='donaciones_realizadas')
     monto = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     articulo_donado = models.CharField(max_length=255, null=True, blank=True)

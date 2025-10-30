@@ -15,15 +15,16 @@
                 <button class="btn btn-outline-primary" type="submit">Buscar</button>
             </div>
             {% if current_cat %}<input type="hidden" name="cat" value="{{ current_cat }}">{% endif %}
+            {% if current_orden %}<input type="hidden" name="orden" value="{{ current_orden }}">{% endif %}
         </form>
 
         <div class="list-group">
-            <a href="{% url 'campana_listado' %}{% if current_query %}?q={{ current_query }}{% endif %}" 
+            <a href="{% url 'campana_listado' %}?{% if current_query %}q={{ current_query }}&{% endif %}{% if current_orden %}orden={{ current_orden }}{% endif %}" 
                class="list-group-item list-group-item-action {% if not current_cat %}active{% endif %}">
                 Todas las categorías
             </a>
             {% for categoria in categorias %}
-                <a href="{% url 'campana_listado' %}?cat={{ categoria.id }}{% if current_query %}&q={{ current_query }}{% endif %}" 
+                <a href="{% url 'campana_listado' %}?cat={{ categoria.id }}{% if current_query %}&q={{ current_query }}{% endif %}{% if current_orden %}&orden={{ current_orden }}{% endif %}" 
                    class="list-group-item list-group-item-action {% if current_cat|safe == categoria.id|safe %}active{% endif %}">
                     {{ categoria.nombre }}
                 </a>
@@ -32,7 +33,26 @@
     </div>
 
     <div class="col-md-9">
-        <h2>Campañas Activas</h2>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">Campañas Activas</h2>
+            
+            <!-- Botones de Ordenamiento -->
+            <div class="btn-group" role="group" aria-label="Ordenar campañas">
+                <a href="?orden=recientes{% if current_query %}&q={{ current_query }}{% endif %}{% if current_cat %}&cat={{ current_cat }}{% endif %}" 
+                   class="btn btn-sm {% if current_orden == 'recientes' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Más recientes
+                </a>
+                <a href="?orden=populares{% if current_query %}&q={{ current_query }}{% endif %}{% if current_cat %}&cat={{ current_cat }}{% endif %}" 
+                   class="btn btn-sm {% if current_orden == 'populares' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Más populares
+                </a>
+                <a href="?orden=recaudado{% if current_query %}&q={{ current_query }}{% endif %}{% if current_cat %}&cat={{ current_cat }}{% endif %}" 
+                   class="btn btn-sm {% if current_orden == 'recaudado' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Más recaudado
+                </a>
+            </div>
+        </div>
+
         {% if current_query or current_cat %}
             <p class="text-muted">Mostrando resultados para: 
                 {% if current_query %}"{{ current_query }}"{% endif %}
@@ -61,7 +81,12 @@
                         
                         <div class="col-7">
                             <div class="card-body d-flex flex-column h-100">
-                                <h5 class="card-title">{{ campana.titulo|truncatechars:25 }}</h5>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">{{ campana.titulo|truncatechars:25 }}</h5>
+                                    <span class="badge bg-secondary" title="Número de donaciones">
+                                        <i class="bi bi-heart-fill"></i> {{ campana.num_donaciones }}
+                                    </span>
+                                </div>
                                 
                                 <p class="card-text text-muted small">{{ campana.descripcion|truncatechars:40 }}</p>
                                 
@@ -94,11 +119,11 @@
             <nav aria-label="Page navigation">
                 <ul class="pagination justify-content-center">
                     {% if page_obj.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_query %}&q={{ current_query }}{% endif %}{% if current_cat %}&cat={{ current_cat }}{% endif %}">Anterior</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_query %}&q={{ current_query }}{% endif %}{% if current_cat %}&cat={{ current_cat }}{% endif %}{% if current_orden %}&orden={{ current_orden }}{% endif %}">Anterior</a></li>
                     {% endif %}
                     <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
                     {% if page_obj.has_next %}
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_query %}&q={{ current_query }}{% endif %}{% if current_cat %}&cat={{ current_cat }}{% endif %}">Siguiente</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_query %}&q={{ current_query }}{% endif %}{% if current_cat %}&cat={{ current_cat }}{% endif %}{% if current_orden %}&orden={{ current_orden }}{% endif %}">Siguiente</a></li>
                     {% endif %}
                 </ul>
             </nav>

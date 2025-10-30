@@ -2,7 +2,7 @@
 
 from django.urls import path
 from . import views
-from .views import CampanaCreateView, CampanaListView, CampanaDetailView, donar_submit_view, UserDashboardView, CampanaUpdateView
+from .views import CampanaCreateView, CampanaListView, CampanaDetailView, donar_submit_view, UserDashboardView, CampanaUpdateView, UserPasswordChangeView
 
 urlpatterns = [
     path('', views.home_view, name='home'),
@@ -19,4 +19,8 @@ urlpatterns = [
 
     # Ruta del Dashboard
     path('dashboard/', UserDashboardView.as_view(), name='dashboard'),
+    # Alias semántico para Perfil apuntando al mismo dashboard
+    path('perfil/', UserDashboardView.as_view(), name='perfil'),
+    # Cambiar contraseña (vista personalizada sin crispy)
+    path('perfil/cambiar-contrasena/', UserPasswordChangeView.as_view(), name='cambiar_contrasena'),
 ]

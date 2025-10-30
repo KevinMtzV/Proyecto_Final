@@ -9,12 +9,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import CreateView, UpdateView
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse_lazy
-from django.db.models import Q 
+from django.db.models import Q, Sum 
 from .forms import CustomUserCreationForm, CampanaForm 
 from .models import Campana, Categoria, Donacion 
-from .forms import CustomUserCreationForm, CampanaForm, DonacionForm
+from .forms import CustomUserCreationForm, CampanaForm, DonacionForm, CustomPasswordChangeForm
 from django.http import JsonResponse 
 from django.views.decorators.http import require_POST
+from django.contrib.auth.views import PasswordChangeView
 
 def home_view(request):
     # Obtener un listado de campañas activas (Requisito 12 - Búsqueda/Filtrado Básico)
@@ -61,8 +62,13 @@ class CampanaListView(ListView):
     paginate_by = 9
 
     def get_queryset(self):
-        # Filtra solo las campañas activas
-        queryset = super().get_queryset().filter(estado='ACT').order_by('-fecha_creacion')
+        from django.db.models import Count
+        
+        # Filtra solo las campañas activas y añade el conteo de donaciones
+        # CONEXIÓN DOBLE: Campana → Donacion (COUNT)
+        queryset = super().get_queryset().filter(estado='ACT').annotate(
+            num_donaciones=Count('donaciones')
+        )
         
         # Búsqueda por palabra clave (query)
         query = self.request.GET.get('q')
@@ -76,6 +82,17 @@ class CampanaListView(ListView):
         if categoria_id:
             queryset = queryset.filter(categoria_id=categoria_id)
 
+        # Ordenamiento (nuevo parámetro)
+        orden = self.request.GET.get('orden', 'recientes')
+        if orden == 'populares':
+            # Ordena por número de donaciones (descendente)
+            queryset = queryset.order_by('-num_donaciones', '-fecha_creacion')
+        elif orden == 'recaudado':
+            # Ordena por monto recaudado (descendente)
+            queryset = queryset.order_by('-recaudado', '-fecha_creacion')
+        else:  # recientes (por defecto)
+            queryset = queryset.order_by('-fecha_creacion')
+
         return queryset
     
     def get_context_data(self, **kwargs):
@@ -84,6 +101,7 @@ class CampanaListView(ListView):
         context['categorias'] = Categoria.objects.all() 
         context['current_cat'] = self.request.GET.get('cat')
         context['current_query'] = self.request.GET.get('q')
+        context['current_orden'] = self.request.GET.get('orden', 'recientes')
         return context
 
 
@@ -174,10 +192,18 @@ class UserDashboardView(LoginRequiredMixin, TemplateView):
         user = self.request.user
         
         # Campañas que el usuario ha organizado
-        context['mis_campanas'] = user.campana_set.all().order_by('-fecha_creacion')
+        mis_campanas = user.campana_set.all().order_by('-fecha_creacion')
+        context['mis_campanas'] = mis_campanas
         
         # Donaciones que el usuario ha realizado
-        context['mis_donaciones'] = user.donaciones_realizadas.all().order_by('-fecha_donacion')
+        mis_donaciones = user.donaciones_realizadas.all().order_by('-fecha_donacion')
+        context['mis_donaciones'] = mis_donaciones
+
+        # Métricas rápidas para mostrar en el perfil/dashboard
+        context['total_campanas'] = mis_campanas.count()
+        agg = mis_donaciones.filter(tipo='MON').aggregate(total=Sum('monto'))
+        context['total_donado'] = agg['total'] or 0
+        context['ultima_donacion'] = mis_donaciones.first()
         
         return context
     
@@ -209,3 +235,14 @@ class CampanaUpdateView(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['action_title'] = "Editar Campaña"
         return context
+
+
+class UserPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+    """Vista personalizada para cambiar contraseña sin crispy."""
+    template_name = 'registration/password_change_form.html'
+    form_class = CustomPasswordChangeForm
+    success_url = reverse_lazy('perfil')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Tu contraseña fue actualizada correctamente.')
+        return super().form_valid(form)

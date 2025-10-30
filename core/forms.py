@@ -1,9 +1,8 @@
 # core/forms.py
 
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from .models import Campana, Categoria, Donacion
-from django import forms
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
@@ -60,3 +59,33 @@ class DonacionForm(forms.ModelForm):
             self.add_error('articulo_donado', "Debe describir el artículo donado.")
         
         return cleaned_data
+
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    """Formulario personalizado para cambiar contraseña con textos en español."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Personaliza etiquetas, ayudas y placeholders
+        self.fields['old_password'].label = 'Contraseña actual'
+        self.fields['old_password'].widget.attrs.update({
+            'placeholder': 'Ingresa tu contraseña actual'
+        })
+
+        self.fields['new_password1'].label = 'Nueva contraseña'
+        self.fields['new_password1'].help_text = (
+            'Debe tener al menos 8 caracteres, no puede parecerse demasiado a tu información personal, '
+            'no puede ser una contraseña común ni completamente numérica.'
+        )
+        self.fields['new_password1'].widget.attrs.update({
+            'placeholder': 'Elige una nueva contraseña segura'
+        })
+
+        self.fields['new_password2'].label = 'Confirmar nueva contraseña'
+        self.fields['new_password2'].widget.attrs.update({
+            'placeholder': 'Repite la nueva contraseña'
+        })
+
+        # Mensajes de error personalizados
+        self.error_messages['password_mismatch'] = 'Las contraseñas no coinciden.'
+        self.error_messages['password_incorrect'] = 'La contraseña actual no es correcta.'

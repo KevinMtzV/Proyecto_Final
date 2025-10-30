@@ -128,9 +128,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-mx'  # Español de México (o 'es' para español genérico)
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Mexico_City'  # Zona horaria de México
 
 USE_I18N = True
 

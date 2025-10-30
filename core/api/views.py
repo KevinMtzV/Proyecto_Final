@@ -44,6 +44,22 @@ class DonacionViewSet(viewsets.ModelViewSet):
         
         return queryset
     
+    @action(detail=False, methods=['get'], url_path='mis-donaciones')
+    def mis_donaciones(self, request):
+        """Retorna todas las donaciones realizadas por el usuario autenticado."""
+        if not request.user.is_authenticated:
+            return Response({"detail": "Autenticación requerida."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        limit = request.query_params.get('limit')
+        qs = Donacion.objects.filter(donante=request.user).select_related('campana').order_by('-fecha_donacion')
+        if limit:
+            try:
+                qs = qs[:int(limit)]
+            except ValueError:
+                pass
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+
     def perform_create(self, serializer):
         # Valida que el usuario esté autenticado para hacer una donación.
         if self.request.user.is_authenticated:
