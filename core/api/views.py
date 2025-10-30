@@ -46,12 +46,17 @@ class DonacionViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], url_path='mis-donaciones')
     def mis_donaciones(self, request):
-        """Retorna todas las donaciones realizadas por el usuario autenticado."""
+        #Retorna todas las donaciones realizadas por el usuario autenticado.
         if not request.user.is_authenticated:
             return Response({"detail": "Autenticación requerida."}, status=status.HTTP_401_UNAUTHORIZED)
 
         limit = request.query_params.get('limit')
-        qs = Donacion.objects.filter(donante=request.user).select_related('campana').order_by('-fecha_donacion')
+        qs = (
+            Donacion.objects
+            .filter(donante=request.user)
+            .select_related('campana', 'donante')
+            .order_by('-fecha_donacion')
+        )
         if limit:
             try:
                 qs = qs[:int(limit)]
