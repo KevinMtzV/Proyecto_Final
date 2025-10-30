@@ -1,3 +1,5 @@
 superusuario: 
 contraseña: kevindjango
 username: kevin
+
+python manage.py runserver

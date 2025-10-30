@@ -3,6 +3,7 @@
 from rest_framework.routers import DefaultRouter
 from .views import CategoriaViewSet, CampanaViewSet, DonacionViewSet
 
+
 # Crea un router y registra nuestros ViewSets
 router = DefaultRouter()
 router.register(r'campanas', CampanaViewSet)

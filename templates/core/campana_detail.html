@@ -32,11 +32,11 @@
         {% endif %}
 
         <h4 class="mt-5">Últimas Donaciones</h4>
-        <ul class="list-group list-group-flush">
+        <ul class="list-group list-group-flush" id="donaciones-recientes-list">
             {% for donacion in donaciones %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
-                        {{ donacion.donante.username|default:"Anónimo" }} donó un {{ donacion.get_tipo_display|lower }}:
+                        {{ donacion.donante.username|default:"Anónimo" }} donó:
                         
                         {% if donacion.tipo == 'MON' %}
                             <span class="fw-bold text-success">${{ donacion.monto|floatformat:2|intcomma }}</span>
@@ -99,6 +99,42 @@
         return cookieValue;
     }
     const csrftoken = getCookie('csrftoken');
+    
+    // URL base de la API de donaciones 
+    const DONACION_API_BASE_URL = '/api/v1/donaciones/'; 
+
+    function updateDonationsList(donaciones) {
+        const listContainer = document.getElementById('donaciones-recientes-list');
+        let htmlContent = '';
+        
+        if (!listContainer) return;
+
+        // Si la paginación está activa y 'donaciones' es un array vacío, se usa este caso.
+        if (!donaciones || donaciones.length === 0) {
+            htmlContent = '<li class="list-group-item text-center text-muted">Aún no hay donaciones. ¡Sé el primero!</li>';
+        } else {
+            donaciones.forEach(d => {
+                const donante = d.donante_username || "Anónimo";
+                const tipoDisplay = d.tipo === 'MON' ? 'monetaria' : 'artículo';
+                const valor = d.tipo === 'MON' ? `$${parseFloat(d.monto).toFixed(2)}` : d.articulo_donado; 
+                const valorClass = d.tipo === 'MON' ? 'text-success' : 'text-primary';
+                
+                const fechaDisplay = new Date(d.fecha_donacion).toLocaleDateString('es-ES'); 
+
+                htmlContent += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${donante}</strong> donó:
+                            <span class="fw-bold ${valorClass}">${valor}</span>
+                        </div>
+                        <small class="text-muted">${fechaDisplay}</small>
+                    </li>
+                `;
+            });
+        }
+        
+        listContainer.innerHTML = htmlContent;
+    }
 
     if (formDonacion) {
         formDonacion.addEventListener('submit', async function(e) {
@@ -111,13 +147,13 @@
 
             const formData = new FormData(formDonacion);
             
-            // Envío asíncrono usando fetch con async/await
+            // Petición 1: Enviar Donación (ÉXITO O FALLO)
             try {
                 const response = await fetch(formDonacion.action, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': csrftoken, // Incluir token de seguridad
-                        'X-Requested-With': 'XMLHttpRequest', // Indicador de AJAX
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest',
                     },
                     body: formData,
                 });
@@ -125,11 +161,9 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    // ÉXITO: Actualizar la UI sin recargar
-                    alert(data.message); // Usar un modal en producción, por ahora alert
                     
                     // Actualizar barra de progreso y recaudado
-                    document.getElementById('recaudado-monto').textContent = '$' + data.new_recaudado.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    document.getElementById('recaudado-monto').textContent = data.new_recaudado.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                     
                     const progressBar = document.getElementById('progress-bar-campana');
                     if(progressBar) {
@@ -137,17 +171,50 @@
                         progressBar.textContent = data.new_porcentaje + '%';
                     }
                     
-                    // Limpiar formulario y recargar donaciones recientes si es necesario
+                    // Limpiar formulario
                     formDonacion.reset();
-                    // Opcional: Volver a cargar las últimas donaciones con otra petición AJAX (Encadenamiento)
+                    
+                    // -------------------------------------------------------------------------
+                    // >> INICIO DEL ENCADENAMIENTO (Petición 2: Cargar lista actualizada)
+                    // -------------------------------------------------------------------------
+                    try {
+                        // Obtener el ID de la campaña de la URL actual
+                        const currentPath = window.location.pathname;
+                        const campanaId = currentPath.split('/')[2]; // Obtiene el ID de la URL /campana/{id}/
+                        
+                        console.log('ID de campaña:', campanaId); // Para depuración
+                        
+                        // 1. Construye la URL FILTRADA CORRECTAMENTE
+                        let url = new URL(DONACION_API_BASE_URL, window.location.origin);
+                        url.searchParams.set('campana', campanaId); // Filtra por la campaña
+                        url.searchParams.set('limit', 5); // Limita a 5 resultados
+                        
+                        // 2. Hace fetch a la URL CONSTRUIDA Y FILTRADA
+                        const donacionesResponse = await fetch(url.toString()); // <-- ¡SOLUCIÓN!
+
+                        if (!donacionesResponse.ok) {
+                            throw new Error(`Error HTTP en API de Donaciones: ${donacionesResponse.status}`);
+                        }
+
+                        // Extrae las donaciones directamente (ya no hay paginación)
+                        const nuevasDonaciones = await donacionesResponse.json();
+                        
+                        // 3. Dibuja las donaciones en la UI
+                        updateDonationsList(nuevasDonaciones);
+                        
+                        //alert(data.message); // Muestra éxito
+                        
+                    } catch (error) {
+                        console.error('Error en el encadenamiento AJAX (Listado):', error);
+                        // Mensaje de éxito de la primera petición, pero con aviso de fallo en la segunda
+                        alert(`${data.message} Sin embargo, hubo un error al actualizar la lista de donaciones.`);
+                    }
+                    // -------------------------------------------------------------------------
                     
                 } else if (!data.success && data.errors) {
-                    // FALLO DE VALIDACIÓN: Mostrar errores
-                    alert('Error en el formulario. Revise los datos.'); // Reemplazar con lógica de UI
+                    alert('Error en el formulario. Revise los datos.'); 
                     console.error('Errores:', data.errors);
-
                 } else {
-                    // OTROS ERRORES
                     alert('Ocurrió un error inesperado al donar.');
                 }
             } catch (error) {

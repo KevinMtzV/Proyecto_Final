@@ -1,6 +1,7 @@
 # core/api/views.py
 
-from rest_framework import viewsets
+from rest_framework import viewsets, filters, serializers
+from django_filters.rest_framework import DjangoFilterBackend
 from core.models import Campana, Categoria, Donacion
 from .serializers import CampanaSerializer, CategoriaSerializer, DonacionSerializer
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
@@ -22,6 +23,26 @@ class DonacionViewSet(viewsets.ModelViewSet):
     serializer_class = DonacionSerializer
     # Permite a cualquier usuario ver/listar, pero requiere autenticación para crear (lo controlaremos en perform_create)
     permission_classes = [IsAuthenticatedOrReadOnly] 
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['campana']
+    ordering_fields = ['fecha_donacion', 'monto']
+    pagination_class = None  # Deshabilitamos la paginación por defecto
+
+    def filter_queryset(self, queryset):
+        """Apply filtering and then limit"""
+        # Primero aplicamos los filtros normales (incluyendo el filtro de campaña)
+        queryset = super().filter_queryset(queryset)
+        
+        # Luego aplicamos el límite si existe
+        limit = self.request.query_params.get('limit')
+        if limit:
+            try:
+                limit = int(limit)
+                queryset = queryset[:limit]
+            except ValueError:
+                pass
+        
+        return queryset
     
     def perform_create(self, serializer):
         # Valida que el usuario esté autenticado para hacer una donación.
