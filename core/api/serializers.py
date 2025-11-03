@@ -2,6 +2,13 @@
 
 from rest_framework import serializers
 from core.models import Categoria, Campana, Donacion
+from django.contrib.auth.models import User
+
+# --- Usuario Serializer (Para incluir info completa del usuario) ---
+class UsuarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'date_joined')
 
 # --- Categoria Serializer (Lectura de catálogo) ---
 class CategoriaSerializer(serializers.ModelSerializer):
@@ -11,23 +18,67 @@ class CategoriaSerializer(serializers.ModelSerializer):
 
 # --- Donacion Serializer (Solo para mostrar en el detalle de Campaña) ---
 class DonacionSerializer(serializers.ModelSerializer):
-    # Campos de solo lectura para el donante y la campaña
+    # Objetos completos anidados (solo lectura)
+    donante = UsuarioSerializer(read_only=True)
+    campana = serializers.SerializerMethodField()
+    
+    # Campos simples para compatibilidad (opcional)
     donante_username = serializers.ReadOnlyField(source='donante.username') 
     campana_titulo = serializers.ReadOnlyField(source='campana.titulo')
     
     class Meta:
         model = Donacion
-        # Exponemos todos los campos, pero solo algunos serán editables/creables
-        fields = ('id', 'donante_username', 'campana_titulo', 'tipo', 'monto', 'articulo_donado', 'fecha_donacion')
-        read_only_fields = ('fecha_donacion',) # La fecha se establece automáticamente
+        # Exponemos todos los campos, incluidos los objetos anidados
+        fields = (
+            'id', 
+            'donante',              # Objeto completo del usuario
+            'donante_username',     # Solo el username (compatibilidad)
+            'campana',              # Objeto completo de la campaña
+            'campana_titulo',       # Solo el título (compatibilidad)
+            'tipo', 
+            'monto', 
+            'articulo_donado', 
+            'fecha_donacion'
+        )
+        read_only_fields = ('fecha_donacion',)
+    
+    def get_campana(self, obj):
+        """Serializa la campaña relacionada sin donaciones para evitar recursión."""
+        from .serializers import CampanaSimpleSerializer
+        return CampanaSimpleSerializer(obj.campana).data
 
-# --- Campana Serializer (La entidad principal) ---
+# --- Campana Simple Serializer (Sin donaciones para evitar recursión) ---
+class CampanaSimpleSerializer(serializers.ModelSerializer):
+    organizador = UsuarioSerializer(read_only=True)
+    categoria = CategoriaSerializer(read_only=True)
+    
+    class Meta:
+        model = Campana
+        fields = (
+            'id', 
+            'titulo', 
+            'descripcion', 
+            'fecha_creacion', 
+            'fecha_limite', 
+            'meta_monetaria', 
+            'recaudado', 
+            'estado', 
+            'imagen',
+            'organizador',  # Objeto completo del organizador
+            'categoria'     # Objeto completo de la categoría
+        )
+
+# --- Campana Serializer (La entidad principal con donaciones) ---
 class CampanaSerializer(serializers.ModelSerializer):
-    # Campos de relaciones
+    # Objetos completos anidados (solo lectura)
+    organizador = UsuarioSerializer(read_only=True)
+    categoria_obj = CategoriaSerializer(source='categoria', read_only=True)
+    
+    # Campos simples para compatibilidad
     organizador_username = serializers.ReadOnlyField(source='organizador.username')
     categoria_nombre = serializers.ReadOnlyField(source='categoria.nombre')
     
-    # Opcional: Mostrar las últimas 5 donaciones en el detalle de la campaña
+    # Mostrar las últimas 5 donaciones en el detalle de la campaña
     ultimas_donaciones = serializers.SerializerMethodField()
 
     class Meta:
@@ -42,12 +93,14 @@ class CampanaSerializer(serializers.ModelSerializer):
             'recaudado', 
             'estado', 
             'imagen',
-            'organizador_username', # Vía ReadOnlyField
-            'categoria_nombre',     # Vía ReadOnlyField
-            'categoria',            # Para la escritura (POST/PUT)
+            'organizador',          # Objeto completo del organizador
+            'organizador_username', # Solo username (compatibilidad)
+            'categoria_obj',        # Objeto completo de categoría
+            'categoria_nombre',     # Solo nombre (compatibilidad)
+            'categoria',            # ID para escritura (POST/PUT)
             'ultimas_donaciones'
         )
-        read_only_fields = ('recaudado', 'organizador',) # No se puede editar manualmente
+        read_only_fields = ('recaudado', 'organizador',)
         
     def get_ultimas_donaciones(self, obj):
         """Método para obtener y serializar las donaciones de una campaña."""
