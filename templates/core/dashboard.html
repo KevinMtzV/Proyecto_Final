@@ -89,15 +89,28 @@
             </div>
             <ul class="list-group list-group-flush">
                 {% for campana in mis_campanas|slice:":5" %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <a href="{% url 'campana_detalle' campana.pk %}">{{ campana.titulo }}</a>
-                        <a href="{% url 'campana_editar' campana.pk %}" class="badge bg-secondary ms-2 text-decoration-none">Editar</a> <!-- <--- NUEVO BOTÓN -->
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <a href="{% url 'campana_detalle' campana.pk %}">{{ campana.titulo }}</a>
+                        </div>
+                        <span class="badge bg-{{ campana.estado|lower|yesno:'success,warning'|default:'secondary' }}">
+                            {{ campana.get_estado_display }}
+                        </span>
                     </div>
-                    <span class="badge bg-{{ campana.estado|lower|cut:'c'|cut:'d'|cut:'s'|cut:'n'|cut:'a'|cut:'l'|cut:'e'|cut:'d'|cut:'d'|cut:'o'|cut:'v'|cut:'i'|cut:'n'|cut:'o'|cut:'l'|cut:'i'|cut:'p'|cut:'m'|cut:'e'|cut:'t'|cut:'e'|cut:'r'|cut:'i'|cut:'n'|cut:'a'|cut:'d'|cut:'o'|cut:' ' }}" 
-                          class="badge bg-{{ campana.estado|lower|yesno:'success,warning'|default:'secondary' }}">
-                        {{ campana.get_estado_display }}
-                    </span>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a href="{% url 'campana_editar' campana.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+                        <button type="button" class="btn btn-outline-warning" 
+                                onclick="cambiarEstadoCampana({{ campana.pk }}, '{{ campana.estado }}')">
+                            <i class="bi bi-arrows-angle-contract"></i> Cambiar Estado
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" 
+                                onclick="eliminarCampana({{ campana.pk }}, '{{ campana.titulo|escapejs }}')">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </button>
+                    </div>
                 </li>
                 {% empty %}
                 <li class="list-group-item text-muted">Aún no has creado ninguna campaña.</li>
@@ -112,7 +125,7 @@
     
 </div>
 
-<!-- Panel colapsable: Todas las donaciones del usuario (se carga por AJAX) -->
+    <!-- Panel colapsable: Todas las donaciones del usuario (se carga por AJAX) -->
 <div class="row">
     <div class="col-lg-12">
         <div id="panel-todas-donaciones" class="collapse">
@@ -134,7 +147,52 @@
     </div>
 </div>
 
-<script>
+<!-- Modal: Cambiar Estado de Campaña -->
+<div class="modal fade" id="modalCambiarEstado" tabindex="-1" aria-labelledby="modalCambiarEstadoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCambiarEstadoLabel">Cambiar Estado de Campaña</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Estado actual: <strong id="estadoActualText"></strong></p>
+                <div class="mb-3">
+                    <label for="nuevoEstadoSelect" class="form-label">Selecciona el nuevo estado:</label>
+                    <select class="form-select" id="nuevoEstadoSelect">
+                        <option value="ACT">Activa</option>
+                        <option value="COM">Completada</option>
+                        <option value="CAN">Cancelada</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarCambioEstado">Guardar Cambio</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirmar Eliminación -->
+<div class="modal fade" id="modalEliminarCampana" tabindex="-1" aria-labelledby="modalEliminarCampanaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalEliminarCampanaLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de eliminar la campaña <strong id="campanaTituloEliminar"></strong>?</p>
+                <p class="text-danger"><i class="bi bi-exclamation-triangle"></i> Esta acción no se puede deshacer y solo funcionará si la campaña no tiene donaciones.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarEliminar">Eliminar Campaña</button>
+            </div>
+        </div>
+    </div>
+</div><script>
     (function() {
         const collapseEl = document.getElementById('panel-todas-donaciones');
         const btn = document.getElementById('btn-cargar-donaciones');
@@ -188,5 +246,126 @@
             }
         });
     })();
+
+    // ====== FUNCIONES PARA OPERACIONES API EN CAMPAÑAS ======
+    
+    // Obtener token CSRF
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // Variables globales para los modals
+    let campanaIdActual = null;
+    let campanaTituloActual = null;
+    const estados = {
+        'ACT': 'Activa',
+        'COM': 'Completada',
+        'CAN': 'Cancelada'
+    };
+
+    // PATCH: Cambiar estado de campaña
+    function cambiarEstadoCampana(campanaId, estadoActual) {
+        campanaIdActual = campanaId;
+        
+        // Configurar modal
+        document.getElementById('estadoActualText').textContent = estados[estadoActual];
+        
+        // Configurar select, excluir estado actual
+        const selectEstado = document.getElementById('nuevoEstadoSelect');
+        selectEstado.innerHTML = '';
+        for (const [codigo, nombre] of Object.entries(estados)) {
+            if (codigo !== estadoActual) {
+                const option = document.createElement('option');
+                option.value = codigo;
+                option.textContent = nombre;
+                selectEstado.appendChild(option);
+            }
+        }
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalCambiarEstado'));
+        modal.show();
+    }
+
+    // Confirmar cambio de estado
+    document.getElementById('btnConfirmarCambioEstado').addEventListener('click', async function() {
+        const nuevoEstado = document.getElementById('nuevoEstadoSelect').value;
+        
+        try {
+            const response = await fetch(`/api/v1/campanas/${campanaIdActual}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    estado: nuevoEstado
+                })
+            });
+
+            if (response.ok) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalCambiarEstado'));
+                modal.hide();
+                showToast('Éxito', 'Estado actualizado exitosamente', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                const error = await response.json();
+                showToast('Error', error.detail || 'No se pudo actualizar el estado', 'error');
+            }
+        } catch (err) {
+            showToast('Error', 'Error de conexión: ' + err.message, 'error');
+        }
+    });
+
+    // DELETE: Eliminar campaña
+    function eliminarCampana(campanaId, titulo) {
+        campanaIdActual = campanaId;
+        campanaTituloActual = titulo;
+        
+        // Configurar modal
+        document.getElementById('campanaTituloEliminar').textContent = titulo;
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalEliminarCampana'));
+        modal.show();
+    }
+
+    // Confirmar eliminación
+    document.getElementById('btnConfirmarEliminar').addEventListener('click', async function() {
+        try {
+            const response = await fetch(`/api/v1/campanas/${campanaIdActual}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                }
+            });
+
+            if (response.ok || response.status === 204) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEliminarCampana'));
+                modal.hide();
+                showToast('Éxito', 'Campaña eliminada exitosamente', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEliminarCampana'));
+                modal.hide();
+                const error = await response.json();
+                showToast('Error', error.detail || 'No se pudo eliminar la campaña', 'error');
+            }
+        } catch (err) {
+            showToast('Error', 'Error de conexión: ' + err.message, 'error');
+        }
+    });
 </script>
 {% endblock %}

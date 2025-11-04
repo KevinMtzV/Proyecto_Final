@@ -32,9 +32,9 @@ class DonacionSerializer(serializers.ModelSerializer):
         fields = (
             'id', 
             'donante',              # Objeto completo del usuario
-            'donante_username',     # Solo el username (compatibilidad)
+            'donante_username',     # Solo el username
             'campana',              # Objeto completo de la campaña
-            'campana_titulo',       # Solo el título (compatibilidad)
+            'campana_titulo',       # Solo el título 
             'tipo', 
             'monto', 
             'articulo_donado', 
@@ -94,10 +94,10 @@ class CampanaSerializer(serializers.ModelSerializer):
             'estado', 
             'imagen',
             'organizador',          # Objeto completo del organizador
-            'organizador_username', # Solo username (compatibilidad)
+            'organizador_username', # Solo username
             'categoria_obj',        # Objeto completo de categoría
-            'categoria_nombre',     # Solo nombre (compatibilidad)
-            'categoria',            # ID para escritura (POST/PUT)
+            'categoria_nombre',     # Solo nombre
+            'categoria',            # ID para escritura
             'ultimas_donaciones'
         )
         read_only_fields = ('recaudado', 'organizador',)
