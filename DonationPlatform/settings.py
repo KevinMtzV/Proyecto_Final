@@ -98,8 +98,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'WebDonaciones',       
-        'USER': 'postgres',              
-        'PASSWORD': 'root',       
+        'USER': 'kevin',              
+        'PASSWORD': 'kevin',       
         'HOST': 'localhost',            
         'PORT': '5432',
     }
