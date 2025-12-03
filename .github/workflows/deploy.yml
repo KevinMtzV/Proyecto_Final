@@ -1,0 +1,35 @@
+name: Despliegue a WSL
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Actualizar código fuente
+        run: |
+          # AQUI estaba el error: Agregamos la ruta de destino al final
+          rsync -av --exclude='.venv' --exclude='.git' --exclude='__pycache__' ./ /home/kevin/Proyecto_Final/
+
+      - name: Instalar dependencias
+        run: |
+          source /home/kevin/Proyecto_Final/.venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Aplicar migraciones
+        run: |
+          source /home/kevin/Proyecto_Final/.venv/bin/activate
+          python manage.py migrate
+
+      - name: Recolectar estáticos
+        run: |
+          source /home/kevin/Proyecto_Final/.venv/bin/activate
+          python manage.py collectstatic --noinput
+
+      - name: Reiniciar Gunicorn
+        run: |
+          sudo systemctl restart gunicorn
