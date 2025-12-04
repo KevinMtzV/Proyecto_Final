@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-y(rsyqwonon4xi!sivj-g+7x5q$pvwmfa-juy1#234l*k-cwvz
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app', '.ngrok-free.dev']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.ngrok-free.app', '.ngrok-free.dev','eastbound-flounderingly-johnathon.ngrok-free.dev']
 
 REST_FRAMEWORK = {
     # 'DEFAULT_FILTER_BACKENDS': [
@@ -60,7 +60,8 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok-free.app',
-    'https://*.ngrok-free.dev'
+    'https://*.ngrok-free.dev',
+'eastbound-flounderingly-johnathon.ngrok-free.dev'
 ]
 
 LOGIN_REDIRECT_URL = '/'
